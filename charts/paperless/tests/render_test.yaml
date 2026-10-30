@@ -12,6 +12,21 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].image
           value: ghcr.io/paperless-ngx/paperless-ngx:3.0.5
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.timeoutSeconds
+          value: 5
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.failureThreshold
+          value: 6
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.timeoutSeconds
+          value: 5
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.failureThreshold
+          value: 30
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.periodSeconds
+          value: 10
       - contains:
           path: spec.template.spec.containers[0].volumeMounts
           content:
