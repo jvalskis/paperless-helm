@@ -26,7 +26,12 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          chart_version=$(sed -n 's/^version: *//p' charts/mealie/Chart.yaml | head -n 1 | tr -d '"\r')
+          chart_file=charts/paperless/Chart.yaml
+          if [ ! -f "$chart_file" ]; then
+            echo "Chart metadata not found: $chart_file" >&2
+            exit 1
+          fi
+          chart_version=$(sed -n 's/^version: *//p' "$chart_file" | head -n 1 | tr -d '"\r')
           if [ "$RELEASE_TAG" != "v$chart_version" ]; then
             echo "Release tag $RELEASE_TAG does not match chart version $chart_version" >&2
             exit 1
