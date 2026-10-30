@@ -1,48 +1,50 @@
-name: Release chart
+name: Release Charts
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
 
 permissions:
-  contents: write
-  packages: write
+  contents: read
 
 jobs:
   release:
+    permissions:
+      contents: read
+      packages: write
     runs-on: ubuntu-latest
+    concurrency:
+      group: release-charts
+      cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v7
-      - uses: azure/setup-helm@v5.0.1
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
-          version: v3.18.6
-      - name: Add chart repository
-        run: helm repo add bjw-s-labs https://bjw-s-labs.github.io/helm-charts/
-      - name: Check tag and chart version
+          fetch-depth: 0
+
+      - name: Verify release tag matches chart version
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          chart_version=$(helm show chart charts/paperless | sed -n 's/^version: *//p' | head -1)
-          test "$RELEASE_TAG" = "v$chart_version"
-      - name: Build and validate chart
+          chart_version=$(sed -n 's/^version: *//p' charts/mealie/Chart.yaml | head -n 1 | tr -d '"\r')
+          if [ "$RELEASE_TAG" != "v$chart_version" ]; then
+            echo "Release tag $RELEASE_TAG does not match chart version $chart_version" >&2
+            exit 1
+          fi
+
+      - name: Configure Git
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
         run: |
-          helm dependency build charts/paperless
-          helm lint --strict charts/paperless
-          helm template paperless charts/paperless --namespace paperless > /tmp/paperless.yaml
-          helm package charts/paperless --destination /tmp
-      - name: Log in to GitHub Container Registry
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: echo "$GH_TOKEN" | helm registry login ghcr.io --username "${{ github.actor }}" --password-stdin
-      - name: Publish OCI chart
-        env:
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          chart_version=$(helm show chart charts/paperless | sed -n 's/^version: *//p' | head -1)
-          helm push "/tmp/paperless-${chart_version}.tgz" "oci://ghcr.io/${REPOSITORY,,}"
-      - name: Create GitHub release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release create "$RELEASE_TAG" --generate-notes /tmp/paperless-*.tgz
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Run chart-releaser
+        uses: bitdeps/helm-oci-charts-releaser@v0.1.5
+        with:
+          charts_dir: charts
+          oci_registry: ghcr.io/${{ github.repository }}
+          oci_username: ${{ github.actor }}
+          oci_password: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          skip_gh_release: true
