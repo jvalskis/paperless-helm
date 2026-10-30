@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  chart:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +26,3 @@ jobs:
         run: helm lint --strict charts/paperless
       - name: Render default chart
         run: helm template paperless charts/paperless --namespace paperless > /tmp/paperless.yaml
-      - name: Install helm-unittest
-        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git --version 1.2.1
-      - name: Test chart behavior
-        run: helm unittest --strict charts/paperless

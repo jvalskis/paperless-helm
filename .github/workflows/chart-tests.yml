@@ -1,0 +1,28 @@
+name: Chart tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4.3.1
+        with:
+          version: v3.18.6
+      - name: Add chart repository
+        run: helm repo add bjw-s-labs https://bjw-s-labs.github.io/helm-charts/
+      - name: Build dependencies
+        run: helm dependency build charts/paperless
+      - name: Install helm-unittest
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git --version 1.2.1
+      - name: Test chart behavior
+        run: helm unittest --strict charts/paperless
