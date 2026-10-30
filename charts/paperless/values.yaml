@@ -1,0 +1,66 @@
+# Additional bjw-s common values (controllers, ingress, persistence, etc.) can be
+# supplied when installing this chart.
+controllers:
+  main:
+    strategy: Recreate
+    containers:
+      main:
+        image:
+          repository: ghcr.io/paperless-ngx/paperless-ngx
+          tag: "{{ .Chart.AppVersion }}"
+          pullPolicy: IfNotPresent
+        env:
+          PAPERLESS_PORT: "8000"
+          PAPERLESS_OCR_LANGUAGE: eng
+        probes:
+          liveness:
+            enabled: true
+            type: HTTP
+            path: /
+            port: 8000
+          readiness:
+            enabled: true
+            type: HTTP
+            path: /
+            port: 8000
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 8000
+
+ingress:
+  main:
+    enabled: false
+
+persistence:
+  data:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    advancedMounts:
+      main:
+        main:
+          - path: /usr/src/paperless/data
+  media:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    advancedMounts:
+      main:
+        main:
+          - path: /usr/src/paperless/media
+  consume:
+    enabled: false
+    advancedMounts:
+      main:
+        main:
+          - path: /usr/src/paperless/consume
+  export:
+    enabled: false
+    advancedMounts:
+      main:
+        main:
+          - path: /usr/src/paperless/export

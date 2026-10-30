@@ -1,0 +1,127 @@
+suite: paperless workload
+release:
+  name: paperless
+  namespace: paperless
+tests:
+  - it: deploys Paperless with persistent data and media
+    template: templates/common.yaml
+    documentSelector:
+      path: kind
+      value: Deployment
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/paperless-ngx/paperless-ngx:3.0.5
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: data
+            mountPath: /usr/src/paperless/data
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: media
+            mountPath: /usr/src/paperless/media
+          any: true
+
+  - it: uses existing storage and secret-backed database and Redis settings
+    template: templates/common.yaml
+    documentSelector:
+      path: kind
+      value: Deployment
+    set:
+      persistence:
+        data:
+          existingClaim: documents-data
+        media:
+          existingClaim: documents-media
+        consume:
+          enabled: true
+          existingClaim: scanner-inbox
+        export:
+          enabled: true
+          existingClaim: documents-export
+      controllers:
+        main:
+          containers:
+            main:
+              env:
+                PAPERLESS_DBUSER:
+                  valueFrom:
+                    secretKeyRef:
+                      name: database-credentials
+                      key: username
+                PAPERLESS_REDIS:
+                  valueFrom:
+                    secretKeyRef:
+                      name: redis-credentials
+                      key: redis-url
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: data
+            persistentVolumeClaim:
+              claimName: documents-data
+          any: true
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: consume
+            persistentVolumeClaim:
+              claimName: scanner-inbox
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBUSER
+            valueFrom:
+              secretKeyRef:
+                name: database-credentials
+                key: username
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_REDIS
+            valueFrom:
+              secretKeyRef:
+                name: redis-credentials
+                key: redis-url
+          any: true
+
+  - it: routes the configured host to the Paperless service
+    template: templates/common.yaml
+    documentSelector:
+      path: kind
+      value: Ingress
+    set:
+      ingress:
+        main:
+          enabled: true
+          hosts:
+            - host: paperless.example.test
+              paths:
+                - path: /
+                  pathType: Prefix
+                  service:
+                    identifier: main
+                    port: http
+          tls:
+            - secretName: paperless-cert-tls
+              hosts:
+                - paperless.example.test
+    asserts:
+      - equal:
+          path: spec.rules[0].host
+          value: paperless.example.test
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.name
+          value: paperless
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.port.number
+          value: 8000
+      - equal:
+          path: spec.tls[0].secretName
+          value: paperless-cert-tls
