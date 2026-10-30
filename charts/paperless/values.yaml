@@ -18,11 +18,25 @@ controllers:
             type: HTTP
             path: /
             port: 8000
+            spec:
+              timeoutSeconds: 5
           readiness:
             enabled: true
             type: HTTP
             path: /
             port: 8000
+            spec:
+              timeoutSeconds: 5
+              failureThreshold: 6
+          startup:
+            enabled: true
+            type: HTTP
+            path: /
+            port: 8000
+            spec:
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 30
 
 service:
   main:
