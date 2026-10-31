@@ -2,7 +2,7 @@ apiVersion: v2
 name: paperless
 description: Paperless-ngx document management, based on the bjw-s common library
 type: application
-version: 0.1.3
+version: 0.1.4
 appVersion: 3.0.5
 kubeVersion: ">=1.28.0-0"
 home: https://docs.paperless-ngx.com/
