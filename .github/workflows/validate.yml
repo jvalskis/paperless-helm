@@ -13,7 +13,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: azure/setup-helm@v5.0.1
@@ -30,6 +30,23 @@ jobs:
         run: helm lint --strict charts/paperless
       - name: Render default chart
         run: helm template paperless charts/paperless --namespace paperless > /tmp/paperless.yaml
+
+  integration:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5.0.1
+        with:
+          version: v3.18.6
+      - name: Add chart repositories
+        run: |
+          helm repo add bjw-s-labs https://bjw-s-labs.github.io/helm-charts/
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts
+      - name: Build dependencies
+        run: helm dependency build charts/paperless
       - name: Create Kubernetes cluster
         uses: helm/kind-action@06c1ae10762d3b9c1644e7fe69596ae519e015a2 # v1.15.0
         with:
