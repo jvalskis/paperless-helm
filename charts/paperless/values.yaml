@@ -1,5 +1,7 @@
 # Additional bjw-s common values (controllers, ingress, persistence, etc.) can be
 # supplied when installing this chart.
+global: {}
+
 controllers:
   main:
     strategy: Recreate
@@ -78,3 +80,46 @@ persistence:
       main:
         main:
           - path: /usr/src/paperless/export
+
+database:
+  external:
+    enabled: false
+    engine: postgresql
+    host: ""
+    port: null
+    name: paperless
+    existingSecret:
+      name: ""
+      usernameKey: username
+      passwordKey: password
+
+postgresql:
+  enabled: false
+  image:
+    repository: bitnamilegacy/postgresql
+  auth:
+    username: paperless
+    password: ""
+    database: paperless
+    existingSecret: ""
+  primary:
+    persistence:
+      enabled: true
+
+cloudnativepg:
+  enabled: false
+  nameOverride: cluster
+  type: postgresql
+  mode: standalone
+  version:
+    postgresql: "16"
+  cluster:
+    instances: 1
+    storage:
+      size: 10Gi
+    walStorage:
+      enabled: true
+      size: 2Gi
+    initdb:
+      database: paperless
+      owner: paperless

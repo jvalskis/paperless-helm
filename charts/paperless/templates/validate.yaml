@@ -1,0 +1,31 @@
+{{- if hasKey .Values "cluster" -}}
+  {{- fail "cluster values have moved to cloudnativepg; rename cluster: to cloudnativepg:" -}}
+{{- end -}}
+{{- if and .Values.postgresql.enabled .Values.cloudnativepg.enabled -}}
+  {{- fail "postgresql.enabled and cloudnativepg.enabled cannot both be true" -}}
+{{- end -}}
+{{- if and .Values.database.external.enabled (or .Values.postgresql.enabled .Values.cloudnativepg.enabled) -}}
+  {{- fail "database.external.enabled cannot be combined with postgresql.enabled or cloudnativepg.enabled" -}}
+{{- end -}}
+{{- if .Values.database.external.enabled -}}
+  {{- $engine := .Values.database.external.engine -}}
+  {{- if not (has $engine (list "postgresql" "mariadb")) -}}
+    {{- fail "database.external.engine must be postgresql or mariadb" -}}
+  {{- end -}}
+  {{- $_ := required "database.external.host is required" .Values.database.external.host -}}
+  {{- $_ := required "database.external.name is required" .Values.database.external.name -}}
+  {{- $_ := required "database.external.existingSecret.name is required" .Values.database.external.existingSecret.name -}}
+  {{- $_ := required "database.external.existingSecret.usernameKey is required" .Values.database.external.existingSecret.usernameKey -}}
+  {{- $_ := required "database.external.existingSecret.passwordKey is required" .Values.database.external.existingSecret.passwordKey -}}
+{{- end -}}
+{{- if .Values.postgresql.enabled -}}
+  {{- $_ := required "postgresql.auth.username is required" .Values.postgresql.auth.username -}}
+  {{- $_ := required "postgresql.auth.database is required" .Values.postgresql.auth.database -}}
+  {{- if not .Values.postgresql.auth.existingSecret -}}
+    {{- $_ := required "postgresql.auth.password or postgresql.auth.existingSecret is required" .Values.postgresql.auth.password -}}
+  {{- end -}}
+{{- end -}}
+{{- if .Values.cloudnativepg.enabled -}}
+  {{- $_ := required "cloudnativepg.cluster.initdb.database is required" .Values.cloudnativepg.cluster.initdb.database -}}
+  {{- $_ := required "cloudnativepg.cluster.initdb.owner is required" .Values.cloudnativepg.cluster.initdb.owner -}}
+{{- end -}}

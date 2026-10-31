@@ -1,1 +1,36 @@
+{{- if or .Values.database.external.enabled .Values.postgresql.enabled .Values.cloudnativepg.enabled -}}
+  {{- $container := .Values.controllers.main.containers.main -}}
+  {{- $env := $container.env | default dict -}}
+  {{- $engine := "postgresql" -}}
+  {{- if .Values.database.external.enabled -}}
+    {{- $engine = .Values.database.external.engine -}}
+  {{- end -}}
+  {{- $defaults := dict "PAPERLESS_DBENGINE" $engine -}}
+  {{- $dbPort := "5432" -}}
+  {{- $dbUser := "" -}}
+  {{- $dbPasswordKey := "password" -}}
+  {{- if .Values.database.external.enabled -}}
+    {{- if eq $engine "mariadb" -}}
+      {{- $dbPort = "3306" -}}
+    {{- end -}}
+    {{- with .Values.database.external.port -}}
+      {{- $dbPort = . | toString -}}
+    {{- end -}}
+    {{- $dbUser = dict "valueFrom" (dict "secretKeyRef" (dict "name" (include "paperless.dbSecretName" .) "key" .Values.database.external.existingSecret.usernameKey)) -}}
+    {{- $dbPasswordKey = .Values.database.external.existingSecret.passwordKey -}}
+  {{- else -}}
+    {{- $dbUser = include "paperless.dbUser" . -}}
+  {{- end -}}
+  {{- $_ := set $defaults "PAPERLESS_DBHOST" (include "paperless.dbHost" .) -}}
+  {{- $_ := set $defaults "PAPERLESS_DBPORT" $dbPort -}}
+  {{- $_ := set $defaults "PAPERLESS_DBNAME" (include "paperless.dbName" .) -}}
+  {{- $_ := set $defaults "PAPERLESS_DBUSER" $dbUser -}}
+  {{- $_ := set $defaults "PAPERLESS_DBPASS" (dict "valueFrom" (dict "secretKeyRef" (dict "name" (include "paperless.dbSecretName" .) "key" $dbPasswordKey))) -}}
+  {{- range $key, $value := $defaults -}}
+    {{- if not (hasKey $env $key) -}}
+      {{- $_ := set $env $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $_ := set $container "env" $env -}}
+{{- end -}}
 {{ include "bjw-s.common.loader.all" . }}

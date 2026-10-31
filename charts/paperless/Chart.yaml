@@ -12,3 +12,12 @@ dependencies:
   - name: common
     version: 4.6.2
     repository: https://bjw-s-labs.github.io/helm-charts/
+  - name: postgresql
+    version: 15.5.21
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: cluster
+    alias: cloudnativepg
+    version: 0.9.0
+    repository: https://cloudnative-pg.github.io/charts
+    condition: cloudnativepg.enabled
