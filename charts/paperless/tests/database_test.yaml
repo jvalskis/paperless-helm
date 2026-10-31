@@ -1,0 +1,397 @@
+suite: database configuration
+release:
+  name: paperless-test
+  namespace: default
+tests:
+  - it: uses SQLite without PostgreSQL connection settings by default
+    template: templates/common.yaml
+    documentSelector:
+      path: kind
+      value: Deployment
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBENGINE
+          any: true
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBHOST
+          any: true
+
+  - it: configures bundled PostgreSQL automatically
+    template: templates/common.yaml
+    documentSelector:
+      path: kind
+      value: Deployment
+    set:
+      postgresql.enabled: true
+      postgresql.auth.password: test-password
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBENGINE
+            value: postgresql
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBHOST
+            value: paperless-test-postgresql
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBNAME
+            value: paperless
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBUSER
+            value: paperless
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBPASS
+            valueFrom:
+              secretKeyRef:
+                name: paperless-test-db-credentials
+                key: password
+          any: true
+
+  - it: creates credentials for bundled PostgreSQL
+    template: templates/database-secret.yaml
+    set:
+      postgresql.enabled: true
+      postgresql.auth.password: test-password
+    asserts:
+      - equal:
+          path: metadata.name
+          value: paperless-test-db-credentials
+      - equal:
+          path: stringData.username
+          value: paperless
+      - equal:
+          path: stringData.password
+          value: test-password
+      - equal:
+          path: stringData.postgres-password
+          value: test-password
+
+  - it: uses an existing bundled PostgreSQL secret
+    template: templates/common.yaml
+    documentSelector:
+      path: kind
+      value: Deployment
+    set:
+      postgresql.enabled: true
+      postgresql.auth.existingSecret: database-credentials
+      postgresql.auth.username: documents
+      postgresql.auth.database: documents
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBNAME
+            value: documents
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBUSER
+            value: documents
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBPASS
+            valueFrom:
+              secretKeyRef:
+                name: database-credentials
+                key: password
+          any: true
+
+  - it: configures external PostgreSQL from the database map
+    template: templates/common.yaml
+    documentSelector:
+      path: kind
+      value: Deployment
+    set:
+      database.external.enabled: true
+      database.external.engine: postgresql
+      database.external.host: db.example.test
+      database.external.port: 5433
+      database.external.name: documents
+      database.external.existingSecret.name: external-db
+      database.external.existingSecret.usernameKey: db-user
+      database.external.existingSecret.passwordKey: db-password
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBENGINE
+            value: postgresql
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBHOST
+            value: db.example.test
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBPORT
+            value: "5433"
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBNAME
+            value: documents
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBUSER
+            valueFrom:
+              secretKeyRef:
+                name: external-db
+                key: db-user
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBPASS
+            valueFrom:
+              secretKeyRef:
+                name: external-db
+                key: db-password
+          any: true
+
+  - it: configures external MariaDB with its default port
+    template: templates/common.yaml
+    documentSelector:
+      path: kind
+      value: Deployment
+    set:
+      database.external.enabled: true
+      database.external.engine: mariadb
+      database.external.host: mariadb.example.test
+      database.external.name: documents
+      database.external.existingSecret.name: mariadb-credentials
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBENGINE
+            value: mariadb
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBHOST
+            value: mariadb.example.test
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBPORT
+            value: "3306"
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBNAME
+            value: documents
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBUSER
+            valueFrom:
+              secretKeyRef:
+                name: mariadb-credentials
+                key: username
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBPASS
+            valueFrom:
+              secretKeyRef:
+                name: mariadb-credentials
+                key: password
+          any: true
+
+  - it: preserves direct external PostgreSQL environment settings
+    template: templates/common.yaml
+    documentSelector:
+      path: kind
+      value: Deployment
+    set:
+      controllers:
+        main:
+          containers:
+            main:
+              env:
+                PAPERLESS_DBENGINE: postgresql
+                PAPERLESS_DBHOST: db.example.test
+                PAPERLESS_DBNAME: documents
+                PAPERLESS_DBUSER: documents
+                PAPERLESS_DBPASS:
+                  valueFrom:
+                    secretKeyRef:
+                      name: external-db
+                      key: password
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBHOST
+            value: db.example.test
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBPASS
+            valueFrom:
+              secretKeyRef:
+                name: external-db
+                key: password
+          any: true
+
+  - it: configures CloudNativePG automatically
+    template: templates/common.yaml
+    documentSelector:
+      path: kind
+      value: Deployment
+    set:
+      cloudnativepg.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBENGINE
+            value: postgresql
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBHOST
+            value: paperless-test-cluster-rw
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBPASS
+            valueFrom:
+              secretKeyRef:
+                name: paperless-test-cluster-app
+                key: password
+          any: true
+
+  - it: uses a configured CloudNativePG name and bootstrap secret
+    template: templates/common.yaml
+    documentSelector:
+      path: kind
+      value: Deployment
+    set:
+      cloudnativepg.enabled: true
+      cloudnativepg.fullnameOverride: documents-db
+      cloudnativepg.cluster.initdb.secret.name: documents-credentials
+      cloudnativepg.cluster.initdb.database: documents
+      cloudnativepg.cluster.initdb.owner: documents
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBNAME
+            value: documents
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBUSER
+            value: documents
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBHOST
+            value: documents-db-rw
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBPASS
+            valueFrom:
+              secretKeyRef:
+                name: documents-credentials
+                key: password
+          any: true
+
+  - it: rejects two bundled databases
+    template: templates/validate.yaml
+    set:
+      postgresql.enabled: true
+      cloudnativepg.enabled: true
+    asserts:
+      - failedTemplate:
+          errorMessage: postgresql.enabled and cloudnativepg.enabled cannot both be true
+
+  - it: rejects the old CloudNativePG values key
+    template: templates/validate.yaml
+    set:
+      cluster.enabled: true
+    asserts:
+      - failedTemplate:
+          errorMessage: "cluster values have moved to cloudnativepg; rename cluster: to cloudnativepg:"
+
+  - it: rejects an external database with a bundled database
+    template: templates/validate.yaml
+    set:
+      database.external.enabled: true
+      postgresql.enabled: true
+    asserts:
+      - failedTemplate:
+          errorMessage: database.external.enabled cannot be combined with postgresql.enabled or cloudnativepg.enabled
+
+  - it: requires an external database host
+    template: templates/validate.yaml
+    set:
+      database.external.enabled: true
+      database.external.existingSecret.name: external-db
+    asserts:
+      - failedTemplate:
+          errorMessage: database.external.host is required
+
+  - it: rejects SQLite as an external database engine
+    template: templates/validate.yaml
+    set:
+      database.external.enabled: true
+      database.external.engine: sqlite
+    asserts:
+      - failedTemplate:
+          errorMessage: database.external.engine must be postgresql or mariadb
+
+  - it: requires an external credentials secret
+    template: templates/validate.yaml
+    set:
+      database.external.enabled: true
+      database.external.host: db.example.test
+    asserts:
+      - failedTemplate:
+          errorMessage: database.external.existingSecret.name is required
+
+  - it: requires bundled PostgreSQL credentials
+    template: templates/validate.yaml
+    set:
+      postgresql.enabled: true
+    asserts:
+      - failedTemplate:
+          errorMessage: postgresql.auth.password or postgresql.auth.existingSecret is required
