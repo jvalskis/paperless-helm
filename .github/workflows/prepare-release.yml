@@ -55,18 +55,27 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           CHART_VERSION: ${{ inputs.version }}
+          APP_VERSION: ${{ inputs.app_version }}
         run: |
+          branch="prepare-release-v$CHART_VERSION"
+          title="Prepare chart v$CHART_VERSION"
+          body="Updates the Paperless chart metadata for release v$CHART_VERSION."
+          if [ -n "$APP_VERSION" ]; then
+            title="$title; bump Paperless to v$APP_VERSION"
+            body="$body Bumps Paperless to v$APP_VERSION."
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -c "prepare-release-v$CHART_VERSION"
+          git switch -c "$branch"
           git add charts/paperless/Chart.yaml
           git diff --cached --quiet && { echo 'Version is unchanged.' >&2; exit 1; }
           git commit -m "chore(release): prepare v$CHART_VERSION"
-          git push --force origin "prepare-release-v$CHART_VERSION"
-          if gh pr view "prepare-release-v$CHART_VERSION" >/dev/null 2>&1; then
-            gh pr edit "prepare-release-v$CHART_VERSION" --title "Prepare chart v$CHART_VERSION"
+          git push --force origin "$branch"
+          if gh pr view "$branch" >/dev/null 2>&1; then
+            gh pr edit "$branch" --title "$title" --body "$body"
           else
-            gh pr create --base "$GITHUB_REF_NAME" --head "prepare-release-v$CHART_VERSION" \
-              --title "Prepare chart v$CHART_VERSION" \
-              --body "Updates the Paperless chart metadata for release v$CHART_VERSION."
+            gh pr create --base "$GITHUB_REF_NAME" --head "$branch" \
+              --title "$title" \
+              --body "$body"
           fi
