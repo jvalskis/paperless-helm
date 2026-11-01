@@ -8,5 +8,11 @@ dependencies:
 - name: cluster
   repository: https://cloudnative-pg.github.io/charts
   version: 0.9.0
-digest: sha256:a31da324e000c9d4d971aa96ac02d4fd6b6874d4981d652ac6c113e292129ffa
-generated: "2026-10-31T21:31:57.284655681+02:00"
+- name: tika
+  repository: oci://apache.jfrog.io/tika-helm
+  version: 4.0.0
+- name: gotenberg
+  repository: https://maikumori.github.io/helm-charts
+  version: 1.30.0
+digest: sha256:e20941bcb35dcf7173bb97356724aa7e7024e2a626557b6cc8a520b523c47745
+generated: "2026-11-01T14:57:22.407767401+02:00"

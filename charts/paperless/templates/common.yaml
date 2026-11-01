@@ -33,4 +33,22 @@
   {{- end -}}
   {{- $_ := set $container "env" $env -}}
 {{- end -}}
+{{- if or .Values.documentParsing.tika.enabled .Values.documentParsing.gotenberg.enabled -}}
+  {{- $container := .Values.controllers.main.containers.main -}}
+  {{- $env := $container.env | default dict -}}
+  {{- if not (hasKey $env "PAPERLESS_TIKA_ENABLED") -}}
+    {{- $_ := set $env "PAPERLESS_TIKA_ENABLED" "true" -}}
+  {{- end -}}
+  {{- if and .Values.documentParsing.tika.enabled (not (hasKey $env "PAPERLESS_TIKA_ENDPOINT")) -}}
+    {{- $host := include "paperless.tikaServiceName" . -}}
+    {{- if .Values.tika.namespaceOverride -}}
+      {{- $host = printf "%s.%s.svc" $host .Values.tika.namespaceOverride -}}
+    {{- end -}}
+    {{- $_ := set $env "PAPERLESS_TIKA_ENDPOINT" (printf "http://%s:%v" $host (.Values.tika.service.port | default 9998)) -}}
+  {{- end -}}
+  {{- if and .Values.documentParsing.gotenberg.enabled (not (hasKey $env "PAPERLESS_TIKA_GOTENBERG_ENDPOINT")) -}}
+    {{- $_ := set $env "PAPERLESS_TIKA_GOTENBERG_ENDPOINT" (printf "http://%s:%v" (include "paperless.gotenbergServiceName" .) (.Values.gotenberg.service.port | default 80)) -}}
+  {{- end -}}
+  {{- $_ := set $container "env" $env -}}
+{{- end -}}
 {{ include "bjw-s.common.loader.all" . }}

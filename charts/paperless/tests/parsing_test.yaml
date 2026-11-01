@@ -1,0 +1,86 @@
+suite: document parsing services
+release:
+  name: paperless-test
+  namespace: default
+tests:
+  - it: leaves Tika integration disabled by default
+    template: templates/common.yaml
+    documentSelector:
+      path: kind
+      value: Deployment
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_TIKA_ENABLED
+          any: true
+
+  - it: connects Paperless to bundled Tika and Gotenberg
+    template: templates/common.yaml
+    documentSelector:
+      path: kind
+      value: Deployment
+    set:
+      documentParsing.tika.enabled: true
+      documentParsing.gotenberg.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_TIKA_ENABLED
+            value: "true"
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_TIKA_ENDPOINT
+            value: http://paperless-test-tika:9998
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_TIKA_GOTENBERG_ENDPOINT
+            value: http://paperless-test-gotenberg:80
+          any: true
+
+  - it: honors custom service names, ports, and explicit endpoints
+    template: templates/common.yaml
+    documentSelector:
+      path: kind
+      value: Deployment
+    set:
+      documentParsing.tika.enabled: true
+      tika.fullnameOverride: tika-service
+      tika.service.port: 9999
+      documentParsing.gotenberg.enabled: true
+      gotenberg.service.port: 8080
+      controllers.main.containers.main.env.PAPERLESS_TIKA_GOTENBERG_ENDPOINT: https://conversion.example.test
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_TIKA_ENDPOINT
+            value: http://tika-service:9999
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_TIKA_GOTENBERG_ENDPOINT
+            value: https://conversion.example.test
+          any: true
+
+  - it: accepts bundled Tika with an external Gotenberg endpoint
+    template: templates/common.yaml
+    documentSelector:
+      path: kind
+      value: Deployment
+    set:
+      documentParsing.tika.enabled: true
+      controllers.main.containers.main.env.PAPERLESS_TIKA_GOTENBERG_ENDPOINT: https://conversion.example.test
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_TIKA_ENABLED
+            value: "true"
+          any: true

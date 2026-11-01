@@ -29,3 +29,12 @@
   {{- $_ := required "cloudnativepg.cluster.initdb.database is required" .Values.cloudnativepg.cluster.initdb.database -}}
   {{- $_ := required "cloudnativepg.cluster.initdb.owner is required" .Values.cloudnativepg.cluster.initdb.owner -}}
 {{- end -}}
+{{- if or .Values.documentParsing.tika.enabled .Values.documentParsing.gotenberg.enabled -}}
+  {{- $env := .Values.controllers.main.containers.main.env | default dict -}}
+  {{- if and (not .Values.documentParsing.tika.enabled) (not (hasKey $env "PAPERLESS_TIKA_ENDPOINT")) -}}
+    {{- fail "documentParsing.tika.enabled or controllers.main.containers.main.env.PAPERLESS_TIKA_ENDPOINT is required when documentParsing.gotenberg.enabled is true" -}}
+  {{- end -}}
+  {{- if and (not .Values.documentParsing.gotenberg.enabled) (not (hasKey $env "PAPERLESS_TIKA_GOTENBERG_ENDPOINT")) -}}
+    {{- fail "documentParsing.gotenberg.enabled or controllers.main.containers.main.env.PAPERLESS_TIKA_GOTENBERG_ENDPOINT is required when documentParsing.tika.enabled is true" -}}
+  {{- end -}}
+{{- end -}}
