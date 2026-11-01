@@ -123,3 +123,13 @@ cloudnativepg:
     initdb:
       database: paperless
       owner: paperless
+
+# Office document and email parsing
+tika:
+  enabled: false
+
+gotenberg:
+  enabled: false
+  chromium:
+    allowList: "file:///tmp/.*"
+    disableJavaScript: true

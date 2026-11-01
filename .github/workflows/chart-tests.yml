@@ -23,6 +23,8 @@ jobs:
           helm repo add bjw-s-labs https://bjw-s-labs.github.io/helm-charts/
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts
+          helm repo add tika https://apache.jfrog.io/artifactory/tika
+          helm repo add maikumori https://maikumori.github.io/helm-charts
       - name: Build dependencies
         run: helm dependency build charts/paperless
       - name: Install helm-unittest
