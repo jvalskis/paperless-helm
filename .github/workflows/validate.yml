@@ -24,7 +24,6 @@ jobs:
           helm repo add bjw-s-labs https://bjw-s-labs.github.io/helm-charts/
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts
-          helm repo add tika https://apache.jfrog.io/artifactory/tika
           helm repo add maikumori https://maikumori.github.io/helm-charts
       - name: Build dependencies
         run: helm dependency build charts/paperless
@@ -33,7 +32,7 @@ jobs:
       - name: Render default chart
         run: helm template paperless charts/paperless --namespace paperless > /tmp/paperless.yaml
       - name: Render bundled parsing services
-        run: helm template paperless charts/paperless --namespace paperless --set tika.enabled=true --set gotenberg.enabled=true > /tmp/paperless-parsing.yaml
+        run: helm template paperless charts/paperless --namespace paperless --set documentParsing.tika.enabled=true --set documentParsing.gotenberg.enabled=true > /tmp/paperless-parsing.yaml
 
   integration:
     needs: validate
@@ -49,7 +48,6 @@ jobs:
           helm repo add bjw-s-labs https://bjw-s-labs.github.io/helm-charts/
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts
-          helm repo add tika https://apache.jfrog.io/artifactory/tika
           helm repo add maikumori https://maikumori.github.io/helm-charts
       - name: Build dependencies
         run: helm dependency build charts/paperless

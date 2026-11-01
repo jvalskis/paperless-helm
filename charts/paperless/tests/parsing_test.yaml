@@ -21,8 +21,8 @@ tests:
       path: kind
       value: Deployment
     set:
-      tika.enabled: true
-      gotenberg.enabled: true
+      documentParsing.tika.enabled: true
+      documentParsing.gotenberg.enabled: true
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
@@ -49,10 +49,10 @@ tests:
       path: kind
       value: Deployment
     set:
-      tika.enabled: true
+      documentParsing.tika.enabled: true
       tika.fullnameOverride: tika-service
       tika.service.port: 9999
-      gotenberg.enabled: true
+      documentParsing.gotenberg.enabled: true
       gotenberg.service.port: 8080
       controllers.main.containers.main.env.PAPERLESS_TIKA_GOTENBERG_ENDPOINT: https://conversion.example.test
     asserts:
@@ -75,7 +75,7 @@ tests:
       path: kind
       value: Deployment
     set:
-      tika.enabled: true
+      documentParsing.tika.enabled: true
       controllers.main.containers.main.env.PAPERLESS_TIKA_GOTENBERG_ENDPOINT: https://conversion.example.test
     asserts:
       - contains:

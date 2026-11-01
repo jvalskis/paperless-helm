@@ -125,11 +125,15 @@ cloudnativepg:
       owner: paperless
 
 # Office document and email parsing
-tika:
-  enabled: false
+documentParsing:
+  tika:
+    enabled: false
+  gotenberg:
+    enabled: false
+
+tika: {}
 
 gotenberg:
-  enabled: false
   chromium:
     allowList: "file:///tmp/.*"
     disableJavaScript: true
