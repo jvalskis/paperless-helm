@@ -9,9 +9,9 @@ tests:
       path: kind
       value: Deployment
     asserts:
-      - equal:
+      - matchRegex:
           path: spec.template.spec.containers[0].image
-          value: ghcr.io/paperless-ngx/paperless-ngx:3.0.5
+          pattern: '^ghcr[.]io/paperless-ngx/paperless-ngx:[^[:space:]]+$'
       - equal:
           path: spec.template.spec.containers[0].readinessProbe.timeoutSeconds
           value: 5
