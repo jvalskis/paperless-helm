@@ -22,10 +22,10 @@ dependencies:
     repository: https://cloudnative-pg.github.io/charts
     condition: cloudnativepg.enabled
   - name: tika
-    version: 3.2.2
+    version: 4.0.0
     repository: https://apache.jfrog.io/artifactory/tika
     condition: tika.enabled
   - name: gotenberg
-    version: 1.13.0
+    version: 1.30.0
     repository: https://maikumori.github.io/helm-charts
     condition: gotenberg.enabled
